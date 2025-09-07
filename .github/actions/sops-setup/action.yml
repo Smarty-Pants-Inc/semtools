@@ -30,8 +30,6 @@ runs:
         command -v sops && sops --version
     - name: Decrypt repo vault to .env.local
       shell: bash
-      env:
-        SOPS_AGE_KEY_FILE: $HOME/.config/age/key.txt
       run: |
         if [ -f .secrets/dev.env.enc ]; then
           sops -d --input-type dotenv --output-type dotenv .secrets/dev.env.enc > .env.local
