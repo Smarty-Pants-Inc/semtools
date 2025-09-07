@@ -12,6 +12,8 @@ runs:
         mkdir -p ~/.config/age
         echo "$SOPS_AGE_KEY" > ~/.config/age/key.txt
         chmod 600 ~/.config/age/key.txt
+        mkdir -p ~/.config/sops/age
+        cp ~/.config/age/key.txt ~/.config/sops/age/keys.txt
       env:
         SOPS_AGE_KEY: ${{ inputs.sops_age_key }}
     - name: Install sops
@@ -19,20 +21,17 @@ runs:
       run: |
         if command -v sops >/dev/null 2>&1; then exit 0; fi
         if [ "$(uname -s)" = "Linux" ]; then
-          if command -v sudo >/dev/null 2>&1 && command -v apt-get >/dev/null 2>&1; then
-            sudo apt-get update -y && sudo apt-get install -y -q sops || true
-          fi
-          if ! command -v sops >/dev/null 2>&1; then
-            VER="v3.10.2"
-            curl -fsSL -o sops "https://github.com/getsops/sops/releases/download/${VER}/sops-${VER}.linux.amd64"
-            chmod +x sops && sudo mv sops /usr/local/bin/sops
-          fi
+          VER="v3.10.2"
+          curl -fsSL -o sops "https://github.com/getsops/sops/releases/download/${VER}/sops-${VER}.linux.amd64"
+          chmod +x sops && sudo mv sops /usr/local/bin/sops
         else
           if command -v brew >/dev/null 2>&1; then brew install sops; fi
         fi
         command -v sops && sops --version
     - name: Decrypt repo vault to .env.local
       shell: bash
+      env:
+        SOPS_AGE_KEY_FILE: $HOME/.config/age/key.txt
       run: |
         if [ -f .secrets/dev.env.enc ]; then
           sops -d --input-type dotenv --output-type dotenv .secrets/dev.env.enc > .env.local
